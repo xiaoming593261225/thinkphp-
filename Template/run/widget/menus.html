@@ -1,0 +1,41 @@
+<li data-name="home" class="layui-nav-item" style="text-align: center;">
+    <a href="/run" lay-tips="主页" lay-direction="2">
+        <cite>系统首页</cite>
+    </a>
+</li>
+{volist name="menus" id="vo"}
+<li data-name="component" class="layui-nav-item">
+    <a href="javascript:;" lay-tips="组件" lay-direction="2">
+        <i class="fa {$vo['icon']}"></i>
+        <cite>{$vo['title']}</cite>
+        <span class="layui-nav-more"></span>
+    </a>
+    {if ( isset($vo['children'] )) }
+    <dl class="layui-nav-child">
+        {foreach $vo['children'] as $key => $val}
+        <dd {if ($thisurl == $val['name'])}  class="layui-nav-itemed" {else /}  class="" {/if}>
+            <a {if (isset($val['children']))} href="javascript:;" {else /} href="{:url($val['name'])}" {/if}>
+        <i class="fa {$val['icon']}"></i>
+        <cite>{$val['title']}</cite>
+                {if ( isset($val['children'])) }
+                    <span class="layui-nav-more"></span>
+                {/if}
+            </a>
+            {if ( isset($val['children']) ) }
+            <dl class="layui-nav-child">
+                {foreach $val['children'] as $k => $v}
+                <dd data-name="list">
+                    <a {if (isset($v['children']))} href="javascript:;" {else /} href="{:url($v['name'])}" {/if}>
+                    <cite>{$v['title']}</cite>
+                    </a>
+                </dd>
+                {/foreach}
+            </dl>
+            {/if}
+        </dd>
+        {/foreach}
+    </dl>
+    {/if}
+</li>
+{/volist}
+<span class="layui-nav-bar" style="top: 84.4618px; height: 0px; opacity: 0;"></span>

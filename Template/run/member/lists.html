@@ -1,0 +1,266 @@
+{extend name="common/base" /}
+{block name="body"}
+<div class="search-block">
+    <form class="layui-form" action="">
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">菜单类型</label>
+                <div class="layui-input-block">
+                    <select name="ismenu" id="ismenu" lay-filter="status">
+                        <option value="">请选择菜单类型</option>
+                        <option value="1">菜单</option>
+                        <option value="2">非菜单</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">菜单名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="title" placeholder="请输入菜单名称" id="title" autocomplete="off"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">权限名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="name" placeholder="请输入权限名称" id="name" autocomplete="off"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <div class="layui-input-inline">
+                    <button class="layui-btn layui-btn-sm" id="search_btn">立即搜索</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="layui-tab-content" style="background-color: rgba(255,255,255,1);margin-top: 5px;">
+    <div class="layui-tab-item layui-show">
+        <div class="layui-btn-group demoTable" style="float: left;">
+            <button class="layui-btn layui-btn-sm" id="export_excel">导出数据</button>
+            <button class="layui-btn layui-btn-sm" id="created">添加会员</button>
+            <button class="layui-btn layui-btn-sm">批量删除</button>
+            <button class="layui-btn layui-btn-sm" id="print_page">打印本页</button>
+        </div>
+        <span class="layui-clear"></span>
+        <table class="layui-hide" id="table_list" lay-filter="lists"></table>
+        <!--<div class="layui-btn-group demoTable" style="float: right;">-->
+        <!--<button class="layui-btn layui-btn-sm" data-type="getCheckData">删除全选</button>-->
+        <!--<button class="layui-btn layui-btn-sm" data-type="getCheckLength">数据反选</button>-->
+        <!--<button class="layui-btn layui-btn-sm" data-type="getCheckLength">导出数据</button>-->
+        <!--&lt;!&ndash;<button class="layui-btn" data-type="isAll">验证是否全选</button>&ndash;&gt;-->
+        <!--</div>-->
+        <!--<span class="layui-clear"></span>-->
+    </div>
+</div>
+<script type="text/html" id="tool">
+    <a class="layui-btn layui-btn-primary layui-btn-xs layui-btn-radius" lay-event="detail">查看</a>
+    <a class="layui-btn layui-btn-xs layui-btn-primary layui-btn-radius" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-xs layui-btn-primary layui-btn-radius" lay-event="create-children">添加子菜单</a>
+    <a class="layui-btn layui-btn-primary layui-btn-xs layui-btn-radius" lay-event="del">删除</a>
+</script>
+
+<script type="text/html" id="ismenu-tpl">
+    <input type="checkbox" name="ismenu" data-id="{{d.id}}" value="{{d.ismenu}}" lay-skin="switch" lay-text="是|否"
+           lay-filter="ismenu" {{ d.ismenu== 1 ? 'checked' : '' }}>
+</script>
+<script type="text/html" id="icon">
+    <div style="text-align: center">
+        <i class="fa {{d.icon}}" style="font-size: 20px;"></i>
+    </div>
+</script>
+{/block}
+{block name="script"}
+<script>
+    layui.config({
+        base: '__ADMIN__/modules/'
+    }).use(['layer', 'element', 'table', 'jquery', 'laydate', 'home'], function () {
+        var layer = layui.layer,
+            $ = layui.jquery,
+            laydate = layui.laydate,
+            form = layui.form,
+            table = layui.table,
+            home = layui.home,
+            element = layui.element;
+        //日期
+        laydate.render({
+            elem: '#create_time'
+            , range: true
+        });
+        //保存当前页
+        var page = 1;
+        var limit = home.fitPage();
+        //方法级渲染
+        table.render({
+            elem: '#table_list'
+            , url: "{:url('AuthGroup/lists')}"
+            , cols: [[
+                {checkbox: true, fixed: true}
+                , {field: 'id', title: 'ID', width: "5%"}
+                , {field: 'title', title: '权限组名称', width: "78%", edit: "text"}
+                , {fixed: 'right', width: "15%", align: 'center', toolbar: '#tool'}
+            ]]
+            , id: 'lists'
+            , page: true
+            , limit: limit
+            , response: {
+                statusName: 'code' //数据状态的字段名称，默认：code
+                , statusCode: 200 //成功的状态码，默认：0
+                , msgName: 'msg' //状态信息的字段名称，默认：msg
+                , countName: 'count' //数据总数的字段名称，默认：count
+                , dataName: 'data' //数据列表的字段名称，默认：data
+            }, done: function (res, curr, count) {
+                page = curr;
+            }
+        });
+        //监听单元格编辑
+        table.on('edit(lists)', function (obj) {
+            var value = obj.value //得到修改后的值
+                , data = obj.data //得到所在行所有键值
+                , field = obj.field; //得到字段
+            $.ajax({
+                type: "POST",
+                async: true,
+                url: "{:url('Type/modify')}",
+                data: data,
+                dataType: "json",
+                success: function (res) {
+                    if (res && res['status'] == 200) {
+                        layer.msg(res.msg, {icon: 1});
+                    } else {
+                        layer.msg(res.msg, {icon: 2});
+                    }
+                }
+            });
+        });
+        $("#search_btn").click(function () {
+            //名称
+            var name = $("#name").val();
+            var title = $("#title").val();
+            var ismenu = $("#ismenu").val();
+            //分类
+
+            //是否上架
+
+            //执行重载
+            table.reload('lists', {
+                page: {
+                    curr: page //重新从第 1 页开始
+                }
+                , where: {
+                    name: name,
+                    title: title,
+                    ismenu: ismenu
+                }
+            });
+            return false;
+        });
+        //监听工具条
+        table.on('tool(lists)', function (obj) { //注：tool是工具条事件名，test是table原始容器的属性 lay-filter="对应的值"
+            var data = obj.data; //获得当前行数据
+            var layEvent = obj.event; //获得 lay-event 对应的值（也可以是表头的 event 参数对应的值）
+            var tr = obj.tr; //获得当前行 tr 的DOM对象
+
+            if (layEvent === 'modify') { //编辑
+                window.location.href = "{:url('Goods/modify')}" + "?goods_id=" + data.id;
+            } else if (layEvent === 'del') { //删除
+                layer.confirm('真的删除行么', function (index) {
+                    $.ajax({
+                        type: "get",
+                        async: true,
+                        url: "{:url('Type/delete')}",
+                        data: {ids: data.id},
+                        dataType: "json",
+                        success: function (res) {
+                            if (res && res['status'] == 200) {
+                                obj.del(); //删除对应行（tr）的DOM结构，并更新缓存
+                                layer.close(index);
+                            } else {
+                                layer.msg(res.msg, {icon: 2});
+                            }
+                        }
+                    });
+                    //向服务端发送删除指令
+                });
+            } else if (layEvent === 'create-children') {
+                layer.open({
+                    title: "添加"+data.title+"的子菜单菜单",
+                    type: 2,
+                    area: ['400px', '400px'],
+                    content: "{:url('Menus/created')}"+"?pid="+data.id,
+                    success: function(layero, index){
+                        console.log(layero, index);
+                    }
+                });
+            }
+        });
+
+        /**
+         * 打印当前页面
+         */
+        function printpage() {
+            window.print();
+        }
+
+        /**
+         * 打印局部div
+         * @param printpage 局部div的ID
+         */
+        function printdiv(printpage) {
+            var headhtml = "<html><head><title></title></head><body>";
+            var foothtml = "</body>";
+            // 获取div中的html内容
+//            var newhtml = document.all.item(printpage).innerHTML;
+            // 获取div中的html内容，jquery写法如下
+            var newhtml = $("." + printpage).html();
+
+            // 获取原来的窗口界面body的html内容，并保存起来
+            var oldhtml = document.body.innerHTML;
+
+            // 给窗口界面重新赋值，赋自己拼接起来的html内容
+            document.body.innerHTML = headhtml + newhtml + foothtml;
+            // 调用window.print方法打印新窗口
+            window.print();
+
+            // 将原来窗口body的html值回填展示
+            document.body.innerHTML = oldhtml;
+            return false;
+        }
+
+        $("#print_page").click(function () {
+            layer.open({
+                title: "打印提示",
+                type: 1
+                , content: '<div style="padding: 20px 20px;">请选择打印类型(打印时请设置缩放为50、打印之后请刷新页面)</div>'
+                , btn: ['打印订单', '打印本页']
+                , btnAlign: 'c' //按钮居中
+                , yes: function () {
+                    layer.closeAll();
+                    printpage();
+                }, btn2: function (index, layero) {
+                    layer.closeAll();
+                    printdiv("layui-table-box");
+                }
+            });
+        });
+        $("#export_excel").click(function () {
+            var name = $("#name").val();
+            var status = $("#status").val();
+            var phone = $("#phone").val();
+            var create_time = $("#create_time").val();
+            window.open("{:url('Order/print_excel')}" + "?name=" + name + "&status=" + status + "&phone=" + phone + "&create_time=" + create_time);
+        });
+        //添加
+        $("#created").click(function () {
+            layer.open({
+                title: "添加权限组",
+                type: 2,
+                area: ['400px', '400px'],
+                content: "{:url('AuthGroup/created')}"
+            });
+        });
+    });
+</script>
+{/block}
